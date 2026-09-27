@@ -6,7 +6,7 @@
 /*   By: ldesboui <ldesboui@42angouleme.fr>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/04 10:39:14 by ldesboui          #+#    #+#             */
-/*   Updated: 2026/09/27 15:43:04 by ldesboui         ###   ########.fr       */
+/*   Updated: 2026/09/27 17:48:27 by ldesboui         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include <iostream>
@@ -63,7 +63,7 @@ class Matrix
 		 * the last 2 arguments are to choose the rotation axis, x = 0, y = 1 and so on
 		 * for rotation you should pass your angle, not sin or something. We do the calculus.
 		 */
-		Matrix(int rows, int cols, int type, std::initializer_list<T> list, int firstAxis = 0, int secondAxis = 0)
+		Matrix(int rows, int cols, int type, std::vector<T> list, int firstAxis = 0, int secondAxis = 0)
 		{
 			if (cols <= 0 || rows <= 0)
 				throw Matrix::TheException("Cannot instantiate a 0 rows/cols matrix");
@@ -71,7 +71,7 @@ class Matrix
 			this->rows = rows;
 			this->cols = cols;
 			this->data.reserve(rows * cols);
-			const T* listData = list.begin();
+			const T* listData = list.data();
 			size_t listSize = list.size();
 
 			switch (type)
@@ -185,54 +185,65 @@ class Matrix
 		/*
 		 * ----------- ADD SUB AND MULTIPLY -----------------
 		 */
-		void			add(Matrix<T>& aMatrix)
+		Matrix<T> add(const Matrix<T>& aMatrix) const
 		{
 			if (aMatrix.getCols() != this->cols || aMatrix.getRows() != this->rows)
 				throw Matrix::TheException("Cannot add different size matrices");
+
+			Matrix<T> newMatrix(this->rows, this->cols, EMPTY, {}, -1, -1);
 			for (int i = 0; i < this->rows; ++i)
 			{
 				for (int y = 0; y < this->cols; ++y)
 				{
-					this->data[i * cols + y] = this->data[i * cols + y] + aMatrix.getData()[i * cols + y];
+					newMatrix.data[i * cols + y] = this->data[i * cols + y] + aMatrix.data[i * cols + y];
 				}
 			}
+			return newMatrix;
 		}
 
-		void			add(T scalar)
+		Matrix<T> add(T scalar) const
 		{
+			Matrix<T> newMatrix(this->rows, this->cols, EMPTY, {}, -1, -1);
 			for (int i = 0; i < this->rows; ++i)
 			{
 				for (int y = 0; y < this->cols; ++y)
 				{
-					this->data[i * cols + y] = this->data[i * cols + y] + scalar;
+					newMatrix.data[i * cols + y] = this->data[i * cols + y] + scalar;
 				}
 			}
+			return newMatrix;
 		}
-		void			sub(Matrix<T>& aMatrix)
+
+		Matrix<T> sub(const Matrix<T>& aMatrix) const
 		{
 			if (aMatrix.getCols() != this->cols || aMatrix.getRows() != this->rows)
-				throw Matrix::TheException("Cannot add different size matrices");
+				throw Matrix::TheException("Cannot sub different size matrices");
+
+			Matrix<T> newMatrix(this->rows, this->cols, EMPTY, {}, -1, -1);
 			for (int i = 0; i < this->rows; ++i)
 			{
 				for (int y = 0; y < this->cols; ++y)
 				{
-					this->data[i * cols + y] = this->data[i * cols + y] - aMatrix.getData()[i * cols + y];
+					newMatrix.data[i * cols + y] = this->data[i * cols + y] - aMatrix.data[i * cols + y];
 				}
 			}
+			return newMatrix;
 		}
 
-		void			sub(T scalar)
+		Matrix<T> sub(T scalar) const
 		{
+			Matrix<T> newMatrix(this->rows, this->cols, EMPTY, {}, -1, -1);
 			for (int i = 0; i < this->rows; ++i)
 			{
 				for (int y = 0; y < this->cols; ++y)
 				{
-					this->data[i * cols + y] = this->data[i * cols + y] - scalar;
+					newMatrix.data[i * cols + y] = this->data[i * cols + y] - scalar;
 				}
 			}
+			return newMatrix;
 		}
 
-		void multiply(Matrix<T>& other)
+		Matrix<T> multiply(const Matrix<T>& other) const
 		{
 			if (this->cols != other.rows)
 				throw Matrix::TheException("Matrix multiplication requires cols of first matrix to match rows of second matrix");
@@ -250,26 +261,26 @@ class Matrix
 					result.data[i * result.cols + j] = sum;
 				}
 			}
-			this->cols = result.getCols();
-			this->rows = result.getRows();
-			this->data = result.getData();
+			return result;
 		}
 
-		void			multiply(T scalar)
+		Matrix<T> multiply(T scalar) const
 		{
+			Matrix<T> newMatrix(this->rows, this->cols, EMPTY, {}, -1, -1);
 			for (int i = 0; i < this->rows; ++i)
 			{
 				for (int y = 0; y < this->cols; ++y)
 				{
-					this->data[i * cols + y] = this->data[i * cols + y] * scalar;
+					newMatrix.data[i * cols + y] = this->data[i * cols + y] * scalar;
 				}
 			}
+			return newMatrix;
 		}
 
 		/*
-		 * ----------------transpose det and dot -----------------
+		 * ----------------transpose det and dot and hadamard -----------------
 		 */
-		Matrix<T>			transpose()
+		Matrix<T> transpose() const
 		{
 			Matrix<T> result(this->cols, this->rows, EMPTY, {}, -1, -1);
 			for (int i = 0; i < this->rows; ++i)
@@ -323,6 +334,19 @@ class Matrix
 			return sum;
 		}
 
+		Matrix<T> hadamard(const Matrix<T>& other) const
+        {
+            if (this->rows != other.rows || this->cols != other.cols)
+                throw Matrix::TheException("Hadamard product requires identical dimensions");
+            
+            Matrix<T> result(this->rows, this->cols, EMPTY, {}, -1, -1);
+            for (size_t i = 0; i < this->data.size(); ++i)
+            {
+                result.data[i] = this->data[i] * other.data[i];
+            }
+            
+            return result;
+        }
 		Matrix<T>	cross(const Matrix<T>& other)		const
 		{
 			if (this->rows != 3 || this->cols != 1 || other.rows != 3 || other.cols != 1)
