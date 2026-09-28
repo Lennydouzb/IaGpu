@@ -8,12 +8,9 @@ source .venv/bin/activate
 
 Packages:
 ```bash
-pip install pandas requests pyarrow fastparquet argcomplete 
+pip install pandas requests pyarrow fastparquet argcomplete matplotlib
 ```
 
-```bash
-    sudo apt-get install libarrow-dev libparquet-dev
-```
 ## Run
 
 either run it with docker
